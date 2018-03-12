@@ -9,17 +9,21 @@ class BaseServer(object):
         print('async world')
         while True:
             print('Test')
+
+async def test(reader, writer):
+    print(writer)
+    await asyncio.sleep(0.2)
+
 if __name__ == '__main__':
-    print('hello')
-    srv = BaseServer()
-    event_loop = asyncio.get_event_loop()
-    factory = asyncio.start_server(srv.run, 'localhost', 8000)
-    server = event_loop.run_until_complete(factory)
+    loop = asyncio.get_event_loop()
+    server_coro = loop.create_server(test, 'localhost', 8000)
+    server = loop.run_until_complete(server_coro)
+    print(server)
     try:
-        event_loop.run_forever()
+        loop.run_forever()
     except KeyboardInterrupt:
         pass
-    finally:
-        server.close()
-        event_loop.run_until_complete(server.wait_closed())
-        event_loop.close()
+    print('closing')
+    server.close()
+    loop.run_until_complete(server.wait_closed())
+    loop.close()
