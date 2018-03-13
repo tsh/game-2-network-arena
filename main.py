@@ -13,7 +13,7 @@ async def tcp_echo_client(loop):
     data = await reader.read(100)
     print('Client Received: %r' % data.decode())
 
-    print('Close the socket')
+    print('Client Close the socket')
     writer.close()
 
 
