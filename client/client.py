@@ -2,6 +2,7 @@ import sys
 import queue
 import time
 import threading
+import socket
 import pygame
 from pygame.locals import *
 
@@ -10,10 +11,12 @@ class ThreadReader:
     def __init__(self, queue: queue.Queue):
         self.queue = queue
         self.active = True
+        self.sock = socket.socket()
+        self.sock.connect(('127.0.0.1', 8888))
 
     def run(self):
         while self.active:
-            self.queue.put('test')
+            self.queue.put(self.sock.recv(4096))
             time.sleep(1)
 
 
