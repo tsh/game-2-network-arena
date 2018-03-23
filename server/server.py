@@ -2,13 +2,16 @@
 import asyncio
 
 class BaseServer(object):
+    counter = 0
     def __init__(self):
         print('Hello init')
 
-    async def run(self, reader, writer):
+    async def run(self):
         print('async world')
         while True:
-            print('Test')
+            self.counter += 1
+            await asyncio.sleep(1)
+            print('slept')
 
 
 async def client_handler():
@@ -19,7 +22,7 @@ async def client_handler():
 
 
 async def server_handler(reader, writer):
-    print('Got connection from: {}'.format(writer.get_extra_info('peername')))
+    print('Server: Got connection from: {}'.format(writer.get_extra_info('peername')))
     while True:
         writer.write(b'Hello')
         await writer.drain()
@@ -30,6 +33,7 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     coro = asyncio.start_server(server_handler, '127.0.0.1', 8888, loop=loop)
     server = loop.run_until_complete(coro)
+    loop.run_until_complete(BaseServer().run())
     loop.run_until_complete(client_handler())
 
     try:
