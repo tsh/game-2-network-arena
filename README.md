@@ -2,7 +2,11 @@
 
 ### TODO
 #### Server:
-- counter inside independent loop, return result of global counter to client(s)
+- create and send game map
+- send game objects statuses
+
+#### Client:
+- send messages to server non block
 
 #### Main:
 - run client and server from main.py
