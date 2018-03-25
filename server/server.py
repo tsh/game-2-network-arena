@@ -1,5 +1,6 @@
-
 import asyncio
+
+from world import GameWorld
 
 ADDRESS = '127.0.0.1'
 PORT = 8888
@@ -7,28 +8,34 @@ PORT = 8888
 class Server:
     connections = []
 
-    def __init__(self, world):
-        self.world = world
+    def __init__(self):
+        self.world = GameWorld()
+        self.notify = True
+        self.notify_delay = 2  # sec
 
     async def run(self):
         await self.world.run()
 
-    async def connect(self, r, writer):
+    async def notify_clients(self):
+        while self.notify:
+            for con in self.connections:
+                await con.send(bytes('Servv says: ' + str(self.world.counter), 'utf8'))
+            await asyncio.sleep(self.notify_delay)
+
+    async def client_connected(self, reader, writer):
         print('Server: Got connection from: {}'.format(writer.get_extra_info('peername')))
-        while True:
-            writer.write(bytes(str(self.world.counter), 'utf8'))
-            await writer.drain()
-            await asyncio.sleep(2)
+        con = Connection(reader, writer)
+        self.connections.append(con)
 
 
-class ClassGameWorld(object):
-    counter = 0
+class Connection:
+    def __init__(self, reader, writer):
+        self.reader = reader
+        self.writer = writer
 
-    async def run(self):
-        while True:
-            self.counter += 1
-            await asyncio.sleep(1)
-            print('WORLD: counter={}'.format(self.counter))
+    async def send(self, msg):
+        self.writer.write(msg)
+        await self.writer.drain()
 
 
 async def client_handler():
@@ -38,21 +45,13 @@ async def client_handler():
         print('Client Received: %r' % data.decode())
 
 
-async def server_handler(reader, writer):
-    print('Server: Got connection from: {}'.format(writer.get_extra_info('peername')))
-    while True:
-        writer.write(b'Hello')
-        await writer.drain()
-        await asyncio.sleep(2)
-
-
 if __name__ == '__main__':
-    world = ClassGameWorld()
-    my_server = Server(world)
+    my_server = Server()
     loop = asyncio.get_event_loop()
-    coro = asyncio.start_server(my_server.connect, ADDRESS, PORT)
+    coro = asyncio.start_server(my_server.client_connected, ADDRESS, PORT)
     server = loop.run_until_complete(coro)
     asyncio.async(my_server.run())
+    asyncio.async(my_server.notify_clients())
     asyncio.async(client_handler())
 
     try:
