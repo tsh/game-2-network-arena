@@ -3,6 +3,8 @@ import queue
 import time
 import threading
 import socket
+import json
+
 import pygame
 from pygame.locals import *
 
@@ -16,7 +18,7 @@ class ThreadReader:
 
     def run(self):
         while self.active:
-            self.queue.put(self.sock.recv(4096))
+            self.queue.put(json.loads(self.sock.recv(4096)))
             time.sleep(1)
 
 
