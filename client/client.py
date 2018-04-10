@@ -1,4 +1,5 @@
 import sys
+import os
 import queue
 import time
 import threading
@@ -30,8 +31,23 @@ class Game(object):
         self.thread.start()
         pygame.init()
         #Set up the window
-        self.windowSurface = pygame.display.set_mode((800, 800), 0, 32)
+        self.window_surface = pygame.display.set_mode((800, 800), 0, 32)
         pygame.display.set_caption('Hello World')
+
+        self.map = []
+        self.map_tile_size = 64
+        self.tile = pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets', 'tiles', 'grass.png'))
+        self.tile.convert()
+        print(self.tile)
+
+    def render(self, window_srf):
+        map_srf = pygame.Surface((64*4, 64*4))
+        map_srf.fill((255, 255, 255))
+        for i, row in enumerate(self.map):
+            for j, col in enumerate(row):
+                r = pygame.Rect(j*self.map_tile_size, i*self.map_tile_size, self.map_tile_size, self.map_tile_size)
+                map_srf.fill(Color("blue"), r)
+        window_srf.blit(map_srf, (0, 0))
 
     def run(self):
         clock = pygame.time.Clock()
@@ -39,10 +55,17 @@ class Game(object):
             clock.tick(60)
             try:
                 msg = self.queue.get_nowait()
+                if msg.get('map'):
+                    self.map = msg['map']
             except queue.Empty:
                 pass
             else:
                 print(msg)
+
+            # self.render(self.window_surface)
+            self.window_surface.blit(self.tile, (0, 0))
+            pygame.display.flip()
+
             key_pressed = pygame.key.get_pressed()
 
             if key_pressed[pygame.K_w]:
@@ -53,7 +76,7 @@ class Game(object):
                     self.tr.active = False
                     self.thread.join()
                     sys.exit()
-        pygame.display.update()
+        # pygame.display.update()
         sys.exit()
 
 
