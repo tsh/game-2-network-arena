@@ -36,18 +36,22 @@ class Game(object):
 
         self.map = []
         self.map_tile_size = 64
-        self.tile = pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets', 'tiles', 'grass.png'))
-        self.tile.convert()
-        print(self.tile)
+        self.tile_sprite = pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets', 'tiles', 'grass.png'))
+        self.tile_sprite.convert()
 
     def render(self, window_srf):
-        map_srf = pygame.Surface((64*4, 64*4))
+        map_srf = pygame.Surface((self.map_tile_size*4, self.map_tile_size*3))
         map_srf.fill((255, 255, 255))
         for i, row in enumerate(self.map):
-            for j, col in enumerate(row):
-                r = pygame.Rect(j*self.map_tile_size, i*self.map_tile_size, self.map_tile_size, self.map_tile_size)
-                map_srf.fill(Color("blue"), r)
+            for j, tile in enumerate(row):
+                if tile == 1:
+                    obj = self.tile_sprite
+                    map_srf.blit(obj, (j*self.map_tile_size, i*self.map_tile_size))
+                else:
+                    r = pygame.Rect(i*self.map_tile_size, j*self.map_tile_size, self.map_tile_size, self.map_tile_size)
+                    map_srf.fill(Color('blue'), r)
         window_srf.blit(map_srf, (0, 0))
+        pygame.display.flip()
 
     def run(self):
         clock = pygame.time.Clock()
@@ -62,9 +66,7 @@ class Game(object):
             else:
                 print(msg)
 
-            # self.render(self.window_surface)
-            self.window_surface.blit(self.tile, (0, 0))
-            pygame.display.flip()
+            self.render(self.window_surface)
 
             key_pressed = pygame.key.get_pressed()
 
