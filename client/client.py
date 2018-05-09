@@ -10,6 +10,7 @@ import pygame
 from pygame.locals import *
 
 from map import Map
+from objects import Character
 
 
 class ThreadReader:
@@ -43,6 +44,7 @@ class Game(object):
         pygame.display.set_caption('Hello World')
 
         self.map = Map()
+        self.characters = []
 
     def run(self):
         clock = pygame.time.Clock()
@@ -52,12 +54,17 @@ class Game(object):
                 msg = self.queue.get_nowait()
                 if msg.get('map'):
                     self.map.initialize(msg['map'])
+                elif msg.get('character'):
+                    self.characters.append(Character(msg))
             except queue.Empty:
                 pass
             else:
                 print(msg)
 
             self.map.render(self.window_surface)
+            for character in self.characters:
+                character.render(self.window_surface)
+            pygame.display.flip()
 
             key_pressed = pygame.key.get_pressed()
 

@@ -33,4 +33,3 @@ class Map:
                 else:
                     self.map_srf.fill(Color('blue'), r)
         window_srf.blit(self.map_srf, (0, 0))
-        pygame.display.flip()
