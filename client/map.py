@@ -15,20 +15,22 @@ class Map:
         self.tile_grass.convert()
 
     def initialize(self, map_array):
+        print('init')
         self.map = map_array
         self.MAX_TILES_HORZ = len(self.map[0])
         self.MAX_TILES_VERT = len(self.map)
+        self.map_srf = pygame.Surface((self.TILE_SIZE * self.MAX_TILES_HORZ, self.TILE_SIZE * self.MAX_TILES_VERT))
+        self.map_srf.fill((255, 255, 255))
 
     def render(self, window_srf):
-        map_srf = pygame.Surface((self.TILE_SIZE * self.MAX_TILES_HORZ, self.TILE_SIZE * self.MAX_TILES_VERT))
-        map_srf.fill((255, 255, 255))
+        self.map_srf.fill((255, 255, 255))
         for i, row in enumerate(self.map):
             for j, tile in enumerate(row):
                 r = pygame.Rect(j * self.TILE_SIZE, i * self.TILE_SIZE, self.TILE_SIZE, self.TILE_SIZE)
                 if tile == 1:
                     obj = self.tile_grass
-                    map_srf.blit(obj, r)
+                    self.map_srf.blit(obj, r)
                 else:
-                    map_srf.fill(Color('blue'), r)
-                window_srf.blit(map_srf, (0, 0))
-                pygame.display.flip()
+                    self.map_srf.fill(Color('blue'), r)
+        window_srf.blit(self.map_srf, (0, 0))
+        pygame.display.flip()
