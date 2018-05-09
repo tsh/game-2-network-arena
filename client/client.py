@@ -20,8 +20,14 @@ class ThreadReader:
         self.sock.connect(('127.0.0.1', 8888))
 
     def run(self):
+        received = b''
         while self.active:
-            self.queue.put(json.loads(self.sock.recv(4096)))
+            received += self.sock.recv(4096)
+            pos = received.find(b'\n')
+            if pos >= 0:
+                msg = received[:pos]
+                received = received[pos+1:]
+                self.queue.put(json.loads(msg))
             time.sleep(1)
 
 
@@ -32,7 +38,7 @@ class Game(object):
         self.thread = threading.Thread(target=self.tr.run)
         self.thread.start()
         pygame.init()
-        #Set up the window
+        # Set up the window
         self.window_surface = pygame.display.set_mode((800, 800), 0, 32)
         pygame.display.set_caption('Hello World')
 
@@ -63,7 +69,6 @@ class Game(object):
                     self.tr.active = False
                     self.thread.join()
                     sys.exit()
-        # pygame.display.update()
         sys.exit()
 
 

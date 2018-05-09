@@ -2,6 +2,7 @@ import asyncio
 import json
 
 from world import GameWorld
+from objects import Character
 
 ADDRESS = '127.0.0.1'
 PORT = 8888
@@ -9,10 +10,12 @@ PORT = 8888
 class Server:
     connections = []
 
+    MSG_NOTIFY_DELAY = 2  # sec
+
     def __init__(self):
         self.world = GameWorld()
         self.notify = True
-        self.notify_delay = 2  # sec
+        self.character = Character()
 
     async def tick(self):
         await self.world.run()
@@ -24,12 +27,13 @@ class Server:
                     await con.send({'tick': self.world.counter})
                 except ConnectionResetError:
                     self.connections.remove(con)
-            await asyncio.sleep(self.notify_delay)
+            await asyncio.sleep(self.MSG_NOTIFY_DELAY)
 
     async def client_connected(self, reader, writer):
         print('Server: Got connection from: {}'.format(writer.get_extra_info('peername')))
         con = Connection(reader, writer)
         await con.send({'map': self.world.map.serialize()})
+        await con.send({'character': self.character.serialize()})
         self.connections.append(con)
 
 
@@ -39,7 +43,7 @@ class Connection:
         self.writer = writer
 
     async def send(self, msg: dict):
-        self.writer.write(json.dumps(msg).encode())
+        self.writer.write(json.dumps(msg).encode() + b'\n')
         await self.writer.drain()
 
 
