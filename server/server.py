@@ -7,7 +7,7 @@ from objects import Character
 ADDRESS = '127.0.0.1'
 PORT = 8888
 
-class Server:
+class GameServer:
     connections = []
 
     MSG_NOTIFY_DELAY = 2  # sec
@@ -23,38 +23,49 @@ class Server:
     async def notify_clients(self):
         while self.notify:
             for con in self.connections:
-                try:
-                    await con.send({'tick': self.world.counter})
-                except ConnectionResetError:
-                    self.connections.remove(con)
+                con.send({'tick': self.world.counter})
             await asyncio.sleep(self.MSG_NOTIFY_DELAY)
 
-    async def client_connected(self, reader, writer):
-        print('Server: Got connection from: {}'.format(writer.get_extra_info('peername')))
-        con = Connection(reader, writer)
-        await con.send({'map': self.world.map.serialize()})
-        await con.send({'character': self.character.serialize()})
-        self.connections.append(con)
+    def add_connection(self, connection):
+        self.connections.append(connection)
+
+    def remove_connection(self, connection):
+        self.connections.remove(connection)
 
 
-class Connection:
-    def __init__(self, reader, writer):
-        self.reader = reader
-        self.writer = writer
+class ClientConnection(asyncio.Protocol):
+    game_server = GameServer()
 
-    async def send(self, msg: dict):
-        self.writer.write(json.dumps(msg).encode() + b'\n')
-        await self.writer.drain()
+    def connection_made(self, transport):
+        peername = transport.get_extra_info('peername')
+        self.transport = transport
+        self.game_server.add_connection(self)
+        self.send({'map': self.game_server.world.map.serialize()})
+        self.send({'character': self.game_server.character.serialize()})
+
+    def data_received(self, data):
+        message = data.decode()
+        print('received: ', message)
+        self.transport.write(data)
+        # self.transport.close()
+
+    def connection_lost(self, exc):
+        self.game_server.remove_connection(self)
+
+    def send(self, message: dict):
+        self.transport.write(json.dumps(message).encode()+b'\n')
 
 
 if __name__ == '__main__':
-    my_server = Server()
     loop = asyncio.get_event_loop()
-    coro = asyncio.start_server(my_server.client_connected, ADDRESS, PORT)
+    game_server = GameServer()
+    # Each client connection will create a new protocol instance
+    coro = loop.create_server(ClientConnection, '127.0.0.1', 8888)
     server = loop.run_until_complete(coro)
-    asyncio.async(my_server.tick())
-    asyncio.async(my_server.notify_clients())
-
+    asyncio.async(game_server.tick())
+    asyncio.async(game_server.notify_clients())
+    # Serve requests until Ctrl+C is pressed
+    print('Serving on {}'.format(server.sockets[0].getsockname()))
     try:
         loop.run_forever()
     except KeyboardInterrupt:
