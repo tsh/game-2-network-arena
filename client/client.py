@@ -16,24 +16,23 @@ from objects import Character
 class ServerConnection:
     _sock = None
 
-    @classmethod
-    def get_sock(cls):
-        if cls._sock is None:
-            cls._sock = socket.socket()
-            cls._sock.connect(('127.0.0.1', 8888))
-        return cls._sock
+    def __init__(self):
+        if ServerConnection._sock is None:
+            ServerConnection._sock = socket.socket()
+            ServerConnection._sock.connect(('127.0.0.1', 8888))
+        print(self._sock)
 
 
-class Receiver:
+class Receiver(ServerConnection):
     def __init__(self, queue: queue.Queue):
+        super().__init__()
         self.queue = queue
         self.active = True
-        self.socket = ServerConnection.get_sock()
 
     def run(self):
         received = b''
         while self.active:
-            received += self.socket.recv(4096)
+            received += self._sock.recv(4096)
             pos = received.find(b'\n')
             if pos >= 0:
                 msg = received[:pos]
@@ -42,19 +41,20 @@ class Receiver:
             time.sleep(1)
 
 
-class Sender:
+class Sender(ServerConnection):
     def __init__(self):
+        super().__init__()
         self.queue = queue.Queue()
         self.active = True
-        self.socket = ServerConnection.get_sock()
 
     def send(self, msg: dict):
         self.queue.put_nowait(msg)
 
     def run(self):
         while self.active:
-            self.socket.send(b'test22')
+            self._sock.send(b'test22')
             time.sleep(1)
+
 
 class Game(object):
     def __init__(self):
