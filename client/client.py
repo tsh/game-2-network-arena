@@ -59,10 +59,10 @@ class Game(object):
     def __init__(self):
         self.queue = queue.Queue()
         self.receiver = Receiver(self.queue)
-        self.thread = threading.Thread(target=self.receiver.run)
+        self.thread = threading.Thread(target=self.receiver.run, name='receiver_thread')
         self.thread.start()
         self.sender = Sender()
-        self.sender_thread = threading.Thread(target=self.sender.run)
+        self.sender_thread = threading.Thread(target=self.sender.run, name='sender_thread')
         self.sender_thread.start()
         pygame.init()
         # Set up the window
