@@ -46,10 +46,10 @@ class ClientConnection(asyncio.Protocol):
     def data_received(self, data):
         message = data.decode()
         print('received: ', message)
-        self.transport.write(data)
-        # self.transport.close()
+        self.send({'echo': message})
 
     def connection_lost(self, exc):
+        self.transport.close()
         self.game_server.remove_connection(self)
 
     def send(self, message: dict):
