@@ -20,7 +20,6 @@ class ServerConnection:
         if ServerConnection._sock is None:
             ServerConnection._sock = socket.socket()
             ServerConnection._sock.connect(('127.0.0.1', 8888))
-        print(self._sock)
 
 
 class Receiver(ServerConnection):
