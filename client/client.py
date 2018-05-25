@@ -71,7 +71,7 @@ class Game(object):
         pygame.display.set_caption('Hello World')
 
         self.map = Map()
-        self.characters = []
+        self.character = Character()
 
     def run(self):
         clock = pygame.time.Clock()
@@ -83,15 +83,14 @@ class Game(object):
                 if msg.get('map'):
                     self.map.initialize(msg['map'])
                 elif msg.get('character'):
-                    self.characters.append(Character(msg))
+                    self.character.move(msg)
             except queue.Empty:
                 pass
             else:
                 pass
 
             self.map.render(self.window_surface)
-            for character in self.characters:
-                character.render(self.window_surface)
+            self.character.render(self.window_surface)
             pygame.display.flip()
 
             key_pressed = pygame.key.get_pressed()
