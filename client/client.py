@@ -51,6 +51,7 @@ class Sender(ServerConnection):
 
     def run(self):
         while self.active:
+            print(self.active)
             self._sock.send(b'test22')
             time.sleep(1)
 
@@ -59,8 +60,8 @@ class Game(object):
     def __init__(self):
         self.queue = queue.Queue()
         self.receiver = Receiver(self.queue)
-        self.thread = threading.Thread(target=self.receiver.run, name='receiver_thread')
-        self.thread.start()
+        self.receiver_thread = threading.Thread(target=self.receiver.run, name='receiver_thread')
+        self.receiver_thread.start()
         self.sender = Sender()
         self.sender_thread = threading.Thread(target=self.sender.run, name='sender_thread')
         self.sender_thread.start()
@@ -101,8 +102,8 @@ class Game(object):
             for event in pygame.event.get():
                 if event.type == QUIT:
                     self.receiver.active = False
-                    self.thread.join()
-                    self.sender_thread.active = False
+                    self.sender.active = False
+                    self.receiver_thread.join()
                     self.sender_thread.join()
                     sys.exit()
         sys.exit()
