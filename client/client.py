@@ -51,9 +51,9 @@ class Sender(ServerConnection):
 
     def run(self):
         while self.active:
-            print(self.active)
-            self._sock.send(b'test22')
-            time.sleep(1)
+            to_send = self.queue.get()  # will block on exit
+            msg = json.dumps(to_send)
+            self._sock.send(msg.encode())
 
 
 class Game(object):
@@ -97,7 +97,7 @@ class Game(object):
             key_pressed = pygame.key.get_pressed()
 
             if key_pressed[pygame.K_w]:
-                print('K_w')
+                self.sender.send({'move': 10})
 
             for event in pygame.event.get():
                 if event.type == QUIT:

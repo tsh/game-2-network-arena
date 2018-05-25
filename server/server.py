@@ -24,6 +24,7 @@ class GameServer:
         while self.notify:
             for con in self.connections:
                 con.send({'tick': self.world.counter})
+                con.send({'character': self.character.serialize()})
             await asyncio.sleep(self.MSG_NOTIFY_DELAY)
 
     def add_connection(self, connection):
@@ -44,9 +45,12 @@ class ClientConnection(asyncio.Protocol):
         self.send({'character': self.game_server.character.serialize()})
 
     def data_received(self, data):
-        message = data.decode()
-        print('received: ', message)
-        self.send({'echo': message})
+        decoded = data.decode()
+        print('decoded', decoded)
+        msg = json.loads(decoded)
+        print('received: ', msg)
+        if 'move' in msg:
+            self.game_server.character.move()
 
     def connection_lost(self, exc):
         self.transport.close()
@@ -58,12 +62,11 @@ class ClientConnection(asyncio.Protocol):
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    game_server = GameServer()
     # Each client connection will create a new protocol instance
     coro = loop.create_server(ClientConnection, '127.0.0.1', 8888)
     server = loop.run_until_complete(coro)
-    asyncio.async(game_server.tick())
-    asyncio.async(game_server.notify_clients())
+    asyncio.async(ClientConnection.game_server.tick())
+    asyncio.async(ClientConnection.game_server.notify_clients())
     # Serve requests until Ctrl+C is pressed
     print('Serving on {}'.format(server.sockets[0].getsockname()))
     try:
