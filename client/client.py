@@ -37,7 +37,7 @@ class Receiver(ServerConnection):
                 msg = received[:pos]
                 received = received[pos+1:]
                 self.queue.put(json.loads(msg))
-            time.sleep(1)
+            time.sleep(0.1)
 
 
 class Sender(ServerConnection):
