@@ -62,10 +62,6 @@ class Game(object):
     RUN = True
 
     def __init__(self):
-        self.queue = queue.Queue()
-        self.receiver = Receiver(self.queue)
-        self.receiver_thread = threading.Thread(target=self.receiver.run, name='receiver_thread', daemon=True)
-        self.receiver_thread.start()
         self.sender = Sender()
         self.sender_thread = threading.Thread(target=self.sender.run, name='sender_thread', daemon=True)
         self.sender_thread.start()
@@ -77,20 +73,54 @@ class Game(object):
         self.map = Map()
         self.character = Character()
 
+        server_address = ('127.0.0.1', 8888)
+        print('connecting to {} port {}'.format(*server_address))
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect(server_address)
+        self.sock.setblocking(False)
+        self.mysel = selectors.DefaultSelector()
+        self.mysel.register(
+            self.sock,
+            selectors.EVENT_READ | selectors.EVENT_WRITE,
+        )
+        self.received_msg = []
+        self.outgoing_msg = []
+
+    def incoming_messages(self):
+        for key, mask in self.mysel.select(timeout=0):
+            connection = key.fileobj
+            if mask & selectors.EVENT_READ:
+                data = connection.recv(1024)
+                while data:
+                    pos = data.find(b'\n')
+                    if pos >= 0:
+                        msg = data[:pos]
+                        data = data[pos+1:]
+                        self.received_msg.append(json.loads(msg))
+
     def run(self):
         clock = pygame.time.Clock()
         while self.RUN:
             clock.tick(60)
+            self.incoming_messages()
+
             try:
-                msg = self.queue.get_nowait()
+                msg = self.received_msg.pop(0)
+            except IndexError:
+                pass
+            else:
                 if msg.get('map'):
                     self.map.initialize(msg['map'])
                 elif msg.get('character'):
                     self.character.move(msg)
-            except queue.Empty:
+
+
+            try:
+                msg = self.outgoing_msg.pop(0)
+            except IndexError:
                 pass
             else:
-                pass
+                self.sock.sendall(json.dumps(msg).encode())
 
             self.map.render(self.window_surface)
             self.character.render(self.window_surface)
@@ -100,15 +130,12 @@ class Game(object):
 
             if key_pressed[pygame.K_w]:
                 print('SEND: ', time.time())
-                self.sender.send({'move': 10})
+                # self.sender.send({'move': 10})
+                self.outgoing_msg.append({'move': 10})
 
             for event in pygame.event.get():
                 if event.type == QUIT:
                     self.RUN = False
-                    self.receiver.active = False
-                    self.sender.active = False
-                    self.receiver_thread.join(1)
-                    self.sender_thread.join(1)
                     pygame.quit()
 
 
