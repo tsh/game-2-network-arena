@@ -4,6 +4,7 @@ import queue
 import time
 import threading
 import socket
+import selectors
 import json
 
 import pygame
@@ -31,13 +32,14 @@ class Receiver(ServerConnection):
     def run(self):
         received = b''
         while self.active:
-            received += self._sock.recv(4096)
+            received += self._sock.recv(2048)
             pos = received.find(b'\n')
             if pos >= 0:
                 msg = received[:pos]
                 received = received[pos+1:]
                 self.queue.put(json.loads(msg))
-            time.sleep(0.1)
+            print('RCVD ', time.ctime())
+            time.sleep(1)
 
 
 class Sender(ServerConnection):
@@ -57,13 +59,15 @@ class Sender(ServerConnection):
 
 
 class Game(object):
+    RUN = True
+
     def __init__(self):
         self.queue = queue.Queue()
         self.receiver = Receiver(self.queue)
-        self.receiver_thread = threading.Thread(target=self.receiver.run, name='receiver_thread')
+        self.receiver_thread = threading.Thread(target=self.receiver.run, name='receiver_thread', daemon=True)
         self.receiver_thread.start()
         self.sender = Sender()
-        self.sender_thread = threading.Thread(target=self.sender.run, name='sender_thread')
+        self.sender_thread = threading.Thread(target=self.sender.run, name='sender_thread', daemon=True)
         self.sender_thread.start()
         pygame.init()
         # Set up the window
@@ -75,11 +79,10 @@ class Game(object):
 
     def run(self):
         clock = pygame.time.Clock()
-        while True:
+        while self.RUN:
             clock.tick(60)
             try:
                 msg = self.queue.get_nowait()
-                print('received', msg)
                 if msg.get('map'):
                     self.map.initialize(msg['map'])
                 elif msg.get('character'):
@@ -96,16 +99,18 @@ class Game(object):
             key_pressed = pygame.key.get_pressed()
 
             if key_pressed[pygame.K_w]:
+                print('SEND: ', time.time())
                 self.sender.send({'move': 10})
 
             for event in pygame.event.get():
                 if event.type == QUIT:
+                    self.RUN = False
                     self.receiver.active = False
                     self.sender.active = False
-                    self.receiver_thread.join()
-                    self.sender_thread.join()
-                    sys.exit()
-        sys.exit()
+                    self.receiver_thread.join(1)
+                    self.sender_thread.join(1)
+                    pygame.quit()
+
 
 
 class BaseClient(object):
